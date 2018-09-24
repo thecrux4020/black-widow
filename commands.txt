@@ -1,0 +1,23 @@
+iwconfig wlan0 essid CYREX 		#Connect to the AP (OUTPUT interface)
+dhclient 				#Get ip from AP
+
+
+#Configure iptables to forward traffic from fake_interface to output_interface
+iptables --flush
+iptables --table nat --flush
+iptables --delete-chain
+iptables --table nat --delete-chain
+#Rule of fake_interface
+iptables --table nat --append POSTROUTING --out-interface $2 -j MASQUERADE
+#Rule of output_interface
+iptables --append FORWARD --in-interface $1 -j ACCEPT
+
+ifconfig $1 up 10.0.0.1 netmask 255.255.255.0 		#Set ip for fake interface (with RyPIC)
+
+service isc-dhcp-server start 				#Start dhcp server (see config file)
+
+sysctl -w net.ipv4.ip_forward=1				#Enable IP forwarding
+
+hostapd -d /etc/hostapd/hostapd.conf			#Start fake AP from config file
+
+
